@@ -29,10 +29,13 @@ make
 
 Here is a sample sequence of Ubuntu or Mac Terminal Shell commands that get everything compiled. Make sure that the directory/path you are working in does not contain any spaces, otherwise these commands might fail:
 
-> unzip assign1_coreOpenGL_starterCode.zip
-> cd src
-> make
-> ./TerrianVisualizer heightmap/spiral.jpg
+`unzip assign1_coreOpenGL_starterCode.zip`
+
+`cd src`
+
+`make`
+
+` ./TerrianVisualizer heightmap/spiral.jpg`
 
 If your OpenGL version is too low, try updating your graphics card driver to a more recent version. Nvidia drivers have been supporting OpenGL 3.2 since 2009. On the Mac, OpenGL core profile 3.2 is supported since Mac OS X 10.7.5.
 
