@@ -16,7 +16,7 @@
     <ClCompile Include="..\openGLHelper\pipelineProgram.cpp" />
     <ClCompile Include="..\openGLHelper\vao.cpp" />
     <ClCompile Include="..\openGLHelper\vbo.cpp" />
-    <ClCompile Include="hw1.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\external\imageIO\imageFormats.h" />
