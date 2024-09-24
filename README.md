@@ -1,6 +1,6 @@
 ## How to Build
 
-For Mac OS X, before you do any coding, you must install command-line utilities (make, gcc, etc.). Install XCode from the Mac app store, then go to XCode, and use "Preferences/Download" to install the command line tools. Most students use a text editor of their choice, and the Terminal to compile the homework on Mac.
+For Mac OS X, before you do any coding, you must install command-line utilities (make, gcc, etc.). Install XCode from the Mac app store, then go to XCode, and use "Preferences/Download" to install the command line tools. Most students use a text editor of their choice, and the Terminal to compile the project on Mac.
 
 On Linux, you need the libjpeg library, which can be obtained by "sudo apt-get install libjpeg62-dev libglew-dev". For Windows and Mac OS X, the starter code contains a precompiled jpeg library. On Intel-based Apple chips, the jpeg library should work as is. On Apple M1/M2/M3 ARM chips, you need to take the following steps to get jpeg library to compile and link:
 
@@ -30,9 +30,9 @@ make
 Here is a sample sequence of Ubuntu or Mac Terminal Shell commands that get everything compiled. Make sure that the directory/path you are working in does not contain any spaces, otherwise these commands might fail:
 
 > unzip assign1_coreOpenGL_starterCode.zip
-> cd hw1
+> cd src
 > make
-> ./hw1 heightmap/spiral.jpg
+> ./TerrianVisualizer heightmap/spiral.jpg
 
 If your OpenGL version is too low, try updating your graphics card driver to a more recent version. Nvidia drivers have been supporting OpenGL 3.2 since 2009. On the Mac, OpenGL core profile 3.2 is supported since Mac OS X 10.7.5.
 
