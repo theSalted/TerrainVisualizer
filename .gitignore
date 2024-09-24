@@ -481,3 +481,15 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/src/TerrianVisualizer
+/external/jpeg-9a-mac/wrjpgcom
+/external/jpeg-9a-mac/rdjpgcom
+/external/jpeg-9a-mac/Makefile
+/external/jpeg-9a-mac/jpegtran
+/external/jpeg-9a-mac/djpeg
+/external/jpeg-9a-mac/config.status
+/external/jpeg-9a-mac/cjpeg
+/external/jpeg-9a-mac/.libs/libjpeg.lai
+/external/jpeg-9a-mac/.libs/jpegtran
+/external/jpeg-9a-mac/.libs/djpeg
+/external/jpeg-9a-mac/.libs/cjpeg
