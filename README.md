@@ -22,9 +22,9 @@ make
 chmod +x install-sh
 make install
 
-cd ../../hw1
+cd ../../src
 make
-./hw1 heightmap/spiral.jpg
+./TerrianVisualizer heightmap/spiral.jpg
 ```
 
 Here is a sample sequence of Ubuntu or Mac Terminal Shell commands that get everything compiled. Make sure that the directory/path you are working in does not contain any spaces, otherwise these commands might fail:
