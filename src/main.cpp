@@ -54,7 +54,7 @@ float terrainScale[3] = { 1.0f, 1.0f, 1.0f };
 // Width and height of the OpenGL window, in pixels.
 int windowWidth = 1280;
 int windowHeight = 720;
-char windowTitle[512] = "CSCI 420 Homework 1";
+char windowTitle[512] = "Terrian Visualizer";
 
 // Mode of the application
 // 0 (mode 1): vertext; 1 (mode 2) line; 2 (mode 3) triangles; 3 (mode 4) smoothed
@@ -228,21 +228,25 @@ void keyboardFunc(unsigned char key, int x, int y)
     case '1':
       cout << "You pressed the 1." << endl;
       mode = 0;
+      pipelineProgram.SetUniformVariablei("mode", mode);
     break;
 
     case '2':
       cout << "You pressed the 2." << endl;
       mode = 1;
+      pipelineProgram.SetUniformVariablei("mode", mode);
     break;
 
     case '3':
       cout << "You pressed the 3." << endl;
       mode = 2;
+      pipelineProgram.SetUniformVariablei("mode", mode);
     break;
 
     case '4':
       cout << "You pressed the 4." << endl;
       mode = 3;
+      pipelineProgram.SetUniformVariablei("mode", mode);
     break;
 
     case ' ':
@@ -285,7 +289,7 @@ void displayFunc()
 
   // Upload the modelview and projection matrices to the GPU. Note that these are "uniform" variables.
   // Important: these matrices must be uploaded to *all* pipeline programs used.
-  // In hw1, there is only one pipeline program, but in hw2 there will be several of them.
+  // In TV, there is only one pipeline program, but in future there will be several of them.
   // In such a case, you must separately upload to *each* pipeline program.
   // Important: do not make a typo in the variable name below; otherwise, the program will malfunction.
   pipelineProgram.SetUniformVariableMatrix4fv("modelViewMatrix", GL_FALSE, modelViewMatrix);
@@ -318,8 +322,8 @@ void initScene(int argc, char *argv[])
 
   // Create a pipeline program. This operation must be performed BEFORE we initialize any VAOs.
   // A pipeline program contains our shaders. Different pipeline programs may contain different shaders.
-  // In this homework, we only have one set of shaders, and therefore, there is only one pipeline program.
-  // In hw2, we will need to shade different objects with different shaders, and therefore, we will have
+  // We only have one set of shaders, and therefore, there is only one pipeline program.
+  // In future, we will need to shade different objects with different shaders, and therefore, we will have
   // several pipeline programs (e.g., one for the rails, one for the ground/sky, etc.).
   // Load and set up the pipeline program, including its shaders.
   if (pipelineProgram.BuildShadersFromFiles(shaderBasePath, "vertexShader.glsl", "fragmentShader.glsl") != 0)
@@ -329,6 +333,10 @@ void initScene(int argc, char *argv[])
   } 
   cout << "Successfully built the pipeline program." << endl;
     
+  
+  // Set up the uniform variable for mode.
+  pipelineProgram.SetUniformVariablei("mode", mode);
+
   // Bind the pipeline program that we just created. 
   // The purpose of binding a pipeline program is to activate the shaders that it contains, i.e.,
   // any object rendered from that point on, will use those shaders.
@@ -364,7 +372,7 @@ void initScene(int argc, char *argv[])
   // Create the VAOs. There is a single VAO in this example.
   // Important: this code must be executed AFTER we created our pipeline program, and AFTER we set up our VBOs.
   // A VAO contains the geometry for a single object. There should be one VAO per object.
-  // In this homework, "geometry" means vertex positions and colors. In homework 2, it will also include
+  // In this project, "geometry" means vertex positions and colors. In future 2, it will also include
   // vertex normal and vertex texture coordinates for texture mapping.
   vao.Gen();
 
@@ -386,7 +394,7 @@ int main(int argc, char *argv[])
   if (argc != 2)
   {
     cout << "The arguments are incorrect." << endl;
-    cout << "usage: ./hw1 <heightmap file>" << endl;
+    cout << "usage: ./TerrianVisualizer <heightmap file>" << endl;
     exit(EXIT_FAILURE);
   }
 
