@@ -15,12 +15,11 @@ void main()
 
   if (mode == 0) {
     // Render mode 0: Use the original color
-    
-    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-    col = vec4(vec3(gray), color.a);
+    col = color;
   } else if (mode == 1) {
     // Render mode 1: Render in grayscale
-    col = color;
+    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+    col = vec4(vec3(gray), color.a);
   } else if (mode == 2) {
     // Render mode 2: Render with inverted colors
     col = vec4(vec3(1.0) - color.rgb, color.a);

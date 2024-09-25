@@ -63,7 +63,7 @@ int mode = 0;
 // Number of vertices in the single triangle (starter code).
 int numVertices;
 
-// CSCI 420 helper classes.
+// Helper classes.
 OpenGLMatrix matrix;
 PipelineProgram pipelineProgram;
 VBO vboVertices;
@@ -276,6 +276,12 @@ void displayFunc()
 
   // In here, you can do additional modeling on the object, such as performing translations, rotations and scales.
   // ...
+  matrix.Translate(terrainTranslate[0], terrainTranslate[1], terrainTranslate[2]);
+  matrix.Rotate(terrainRotate[0], 1.0, 0.0, 0.0);
+  matrix.Rotate(terrainRotate[1], 0.0, 1.0, 0.0);
+  matrix.Rotate(terrainRotate[2], 0.0, 0.0, 1.0);
+  matrix.Scale(terrainScale[0], terrainScale[0], terrainScale[0]);
+  matrix.Scale(terrainScale[1], terrainScale[1], terrainScale[1]);
 
   // Read the current modelview and projection matrices from our helper class.
   // The matrices are only read here; nothing is actually communicated to OpenGL yet.
@@ -346,8 +352,16 @@ void initScene(int argc, char *argv[])
   pipelineProgram.Bind();
 
   // Prepare the triangle position and color data for the VBO. 
+  // Prepare the triangle position and color data for the VBO. 
   // The code below sets up a single triangle (3 vertices).
   // The triangle will be rendered using GL_TRIANGLES (in displayFunc()).
+  // Prepare the triangle position and color data for the VBO.
+  // The code below sets up a single triangle (3 vertices).
+  // The triangle will be rendered using GL_TRIANGLES (in displayFunc()).
+
+  int width = heightmapImage->getWidth();
+  int height = heightmapImage->getHeight();
+  int resolution = width * height;
 
   numVertices = 3; // This must be a global variable, so that we know how many vertices to render in glDrawArrays.
 
@@ -363,6 +377,28 @@ void initScene(int argc, char *argv[])
   colors[4] = 1.0; colors[5] = 0.0;  colors[6] = 0.0;  colors[7] = 1.0; // (r,g,b,a) channels of the second vertex
   colors[8] = 0.0; colors[9] = 1.0; colors[10] = 0.0; colors[11] = 1.0; // (r,g,b,a) channels of the third vertex
 
+  // int idx = 0;
+  // for (int j = 0; j < height; ++j) {
+  //   for (int i = 0; i < width; ++i) {
+  //     float x = 1.0f * i / (width - 1);       // Normalized x position
+  //     float z = -1.0f * j / (height - 1);     // Normalized z position (flip j to match OpenGL coordinate system)
+  //     float y = heightmapImage->getPixel(i, j, 0) / 255.0f; // Normalized height value
+
+  //     // Set vertex positions (x, y, z)
+  //     positions[idx * 3 + 0] = x;
+  //     positions[idx * 3 + 1] = y;
+  //     positions[idx * 3 + 2] = z;
+
+  //     // Set vertex colors (r, g, b, a)
+  //     colors[idx * 4 + 0] = 1.0f * y; // Red
+  //     colors[idx * 4 + 1] = 1.0f * y; // Green
+  //     colors[idx * 4 + 2] = 1.0f * y; // Blue
+  //     colors[idx * 4 + 3] = 1.0f;     // Alpha
+
+  //     ++idx;
+  //   }
+  // }
+  
   // Create the VBOs. 
   // We make a separate VBO for vertices and colors. 
   // This operation must be performed BEFORE we initialize any VAOs.
