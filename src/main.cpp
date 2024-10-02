@@ -40,8 +40,8 @@ int leftMouseButton = 0; // 1 if pressed, 0 if not
 int middleMouseButton = 0; // 1 if pressed, 0 if not
 int rightMouseButton = 0; // 1 if pressed, 0 if not
 
-typedef enum { ROTATE, TRANSLATE, SCALE } CONTROL_STATE;
-CONTROL_STATE controlState = ROTATE;
+typedef enum { DEFAULT, CTRL, SHIFT } CONTROL_STATE;
+CONTROL_STATE controlState = CTRL;
 
 // Transformations of the terrain.
 float terrainRotate[3] = { 0.0f, 0.0f, 0.0f }; 
@@ -113,11 +113,11 @@ void mouseMotionDragFunc(int x, int y)
 
   // the change in mouse position since the last invocation of this function
   int mousePosDelta[2] = { x - mousePos[0], y - mousePos[1] };
-
+  float average = (mousePosDelta[0] - mousePosDelta[1]) * 0.5f;
   switch (controlState)
   {
-    // translate the terrain
-    case TRANSLATE:
+    // rotate the terrain
+    case DEFAULT:
       if (leftMouseButton)
       {
         // control x,y translation via the left mouse button
@@ -126,51 +126,47 @@ void mouseMotionDragFunc(int x, int y)
       }
       if (middleMouseButton)
       {
-        // control z translation via the middle mouse button
-        terrainTranslate[2] += mousePosDelta[1] * 0.01f;
+        terrainTranslate[2] += average * 0.01f;
       }
-      break;
-
-    // rotate the terrain
-    case ROTATE:
-      if (leftMouseButton)
+      if (rightMouseButton)
       {
         // control x,y rotation via the left mouse button
         terrainRotate[0] += mousePosDelta[1];
         terrainRotate[1] += mousePosDelta[0];
       }
+      break;
+
+    // scale the terrain
+    case SHIFT:
+      if (leftMouseButton)
+      {
+        // control x scaling via the left mouse button
+        terrainScale[0] *= 1.0f + average * 0.01f;
+      }
       if (middleMouseButton)
+      {
+        // control y scaling via the left mouse button
+        terrainScale[1] *= 1.0f - average * 0.01f;
+      }
+      if (rightMouseButton)
+      {
+        // control y scaling via the left mouse button
+        terrainScale[2] *= 1.0f - average * 0.01f;
+      }
+      break;
+
+    // translate the terrain
+    case CTRL:
+      if (leftMouseButton)
       {
         // control z rotation via the middle mouse button
         terrainRotate[2] += mousePosDelta[1];
       }
-      if (rightMouseButton)
-      {
-        // control x,y translation via the left mouse button
-        terrainTranslate[0] += mousePosDelta[0] * 0.01f;
-        terrainTranslate[1] -= mousePosDelta[1] * 0.01f;
-      }
-      break;
-
-    // scale the terrain
-    case SCALE:
-      if (leftMouseButton)
-      {
-        // control x,y scaling via the left mouse button
-        terrainScale[0] *= 1.0f + mousePosDelta[0] * 0.01f;
-        terrainScale[1] *= 1.0f - mousePosDelta[1] * 0.01f;
-      }
-      if (middleMouseButton)
-      {
-        // control z scaling via the middle mouse button
-        terrainScale[2] *= 1.0f - mousePosDelta[1] * 0.01f;
-      }
-      if (rightMouseButton)
-      {
-        // control x,y translation via the left mouse button
-        float average = (mousePosDelta[0] - mousePosDelta[1]) * 0.5f;
-        terrainTranslate[2] += average * 0.01f;
-      }
+      // if (middleMouseButton)
+      // {
+      //   // control z translation via the middle mouse button
+      //   terrainTranslate[2] += mousePosDelta[1] * 0.01f;
+      // }
       break;
   }
 
@@ -212,17 +208,17 @@ void mouseButtonFunc(int button, int state, int x, int y)
   {
     case GLUT_ACTIVE_CTRL:
       cout << "You pressed the GLUT_ACTIVE_CTRL." << endl;
-      controlState = TRANSLATE;
+      controlState = CTRL;
     break;
 
     case GLUT_ACTIVE_SHIFT:
       cout << "You pressed the GLUT_ACTIVE_SHIFT." << endl;
-      controlState = SCALE;
+      controlState = SHIFT;
     break;
 
     // If CTRL and SHIFT are not pressed, we are in rotate mode.
     default:
-      controlState = ROTATE;
+      controlState = DEFAULT;
     break;
   }
 
@@ -286,6 +282,19 @@ void keyboardFunc(unsigned char key, int x, int y)
   }
 }
 
+void updateDrawMode() {
+  switch (mode)
+  {
+  case 0:
+    glDrawArrays(GL_POINTS, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
+    break;
+  
+  default:
+    glDrawArrays(GL_POINTS, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
+    break;
+  }
+}
+
 void displayFunc()
 {
   // This function performs the actual rendering.
@@ -306,8 +315,10 @@ void displayFunc()
   matrix.Rotate(terrainRotate[0], 1.0, 0.0, 0.0);
   matrix.Rotate(terrainRotate[1], 0.0, 1.0, 0.0);
   matrix.Rotate(terrainRotate[2], 0.0, 0.0, 1.0);
-  float magnitude = std::sqrt(terrainScale[0] * terrainScale[0] + terrainScale[1] * terrainScale[1]);
-  matrix.Scale(magnitude, magnitude, terrainScale[2]);
+  // float magnitude = std::sqrt(terrainScale[0] * terrainScale[0] + terrainScale[1] * terrainScale[1]);
+  // matrix.Scale(magnitude, magnitude, terrainScale[2]);
+
+  matrix.Scale(terrainScale[0], terrainScale[1], terrainScale[2]);
 
   // Read the current modelview and projection matrices from our helper class.
   // The matrices are only read here; nothing is actually communicated to OpenGL yet.
@@ -330,8 +341,7 @@ void displayFunc()
   // Execute the rendering.
   // Bind the VAO that we want to render. Remember, one object = one VAO. 
   vao.Bind();
-  glDrawArrays(GL_TRIANGLES, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
-
+  updateDrawMode();
   // Swap the double-buffers.
   glutSwapBuffers();
 }
@@ -389,41 +399,41 @@ void initScene(int argc, char *argv[])
   int height = heightmapImage->getHeight();
   int resolution = width * height;
 
-  numVertices = 3; // This must be a global variable, so that we know how many vertices to render in glDrawArrays.
+  numVertices = resolution; // This must be a global variable, so that we know how many vertices to render in glDrawArrays.
 
-  // Vertex positions.
+  // // Vertex positions.
   std::unique_ptr<float[]> positions = std::make_unique<float[]>(numVertices * 3);
-  positions[0] = 0.0; positions[1] = 0.0; positions[2] = 0.0; // (x,y,z) coordinates of the first vertex
-  positions[3] = 0.0; positions[4] = 1.0; positions[5] = 0.0; // (x,y,z) coordinates of the second vertex
-  positions[6] = 1.0; positions[7] = 0.0; positions[8] = 0.0; // (x,y,z) coordinates of the third vertex
+  // positions[0] = 0.0; positions[1] = 0.0; positions[2] = 0.0; // (x,y,z) coordinates of the first vertex
+  // positions[3] = 0.0; positions[4] = 1.0; positions[5] = 0.0; // (x,y,z) coordinates of the second vertex
+  // positions[6] = 1.0; positions[7] = 0.0; positions[8] = 0.0; // (x,y,z) coordinates of the third vertex
 
-  // Vertex colors.
+  // // Vertex colors.
   std::unique_ptr<float[]> colors = std::make_unique<float[]>(numVertices * 4);
-  colors[0] = 0.0; colors[1] = 0.0;  colors[2] = 1.0;  colors[3] = 1.0; // (r,g,b,a) channels of the first vertex
-  colors[4] = 1.0; colors[5] = 0.0;  colors[6] = 0.0;  colors[7] = 1.0; // (r,g,b,a) channels of the second vertex
-  colors[8] = 0.0; colors[9] = 1.0; colors[10] = 0.0; colors[11] = 1.0; // (r,g,b,a) channels of the third vertex
+  // colors[0] = 0.0; colors[1] = 0.0;  colors[2] = 1.0;  colors[3] = 1.0; // (r,g,b,a) channels of the first vertex
+  // colors[4] = 1.0; colors[5] = 0.0;  colors[6] = 0.0;  colors[7] = 1.0; // (r,g,b,a) channels of the second vertex
+  // colors[8] = 0.0; colors[9] = 1.0; colors[10] = 0.0; colors[11] = 1.0; // (r,g,b,a) channels of the third vertex
 
-  // int idx = 0;
-  // for (int j = 0; j < height; ++j) {
-  //   for (int i = 0; i < width; ++i) {
-  //     float x = 1.0f * i / (width - 1);       // Normalized x position
-  //     float z = -1.0f * j / (height - 1);     // Normalized z position (flip j to match OpenGL coordinate system)
-  //     float y = heightmapImage->getPixel(i, j, 0) / 255.0f; // Normalized height value
+  int idx = 0;
+  for (int j = 0; j < height; ++j) {
+    for (int i = 0; i < width; ++i) {
+      float x = 1.0f * i / (width - 1);       // Normalized x position
+      float z = -1.0f * j / (height - 1);     // Normalized z position (flip j to match OpenGL coordinate system)
+      float y = heightmapImage->getPixel(i, j, 0) / 255.0f; // Normalized height value
 
-  //     // Set vertex positions (x, y, z)
-  //     positions[idx * 3 + 0] = x;
-  //     positions[idx * 3 + 1] = y;
-  //     positions[idx * 3 + 2] = z;
+      // Set vertex positions (x, y, z)
+      positions[idx * 3 + 0] = x;
+      positions[idx * 3 + 1] = y;
+      positions[idx * 3 + 2] = z;
 
-  //     // Set vertex colors (r, g, b, a)
-  //     colors[idx * 4 + 0] = 1.0f * y; // Red
-  //     colors[idx * 4 + 1] = 1.0f * y; // Green
-  //     colors[idx * 4 + 2] = 1.0f * y; // Blue
-  //     colors[idx * 4 + 3] = 1.0f;     // Alpha
+      // Set vertex colors (r, g, b, a)
+      colors[idx * 4 + 0] = 1.0f * y; // Red
+      colors[idx * 4 + 1] = 1.0f * y; // Green
+      colors[idx * 4 + 2] = 1.0f * y; // Blue
+      colors[idx * 4 + 3] = 1.0f;     // Alpha
 
-  //     ++idx;
-  //   }
-  // }
+      ++idx;
+    }
+  }
   
   // Create the VBOs. 
   // We make a separate VBO for vertices and colors. 
