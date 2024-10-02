@@ -144,6 +144,12 @@ void mouseMotionDragFunc(int x, int y)
         // control z rotation via the middle mouse button
         terrainRotate[2] += mousePosDelta[1];
       }
+      if (rightMouseButton)
+      {
+        // control x,y translation via the left mouse button
+        terrainTranslate[0] += mousePosDelta[0] * 0.01f;
+        terrainTranslate[1] -= mousePosDelta[1] * 0.01f;
+      }
       break;
 
     // scale the terrain
@@ -158,6 +164,12 @@ void mouseMotionDragFunc(int x, int y)
       {
         // control z scaling via the middle mouse button
         terrainScale[2] *= 1.0f - mousePosDelta[1] * 0.01f;
+      }
+      if (rightMouseButton)
+      {
+        // control x,y translation via the left mouse button
+        float average = (mousePosDelta[0] - mousePosDelta[1]) * 0.5f;
+        terrainTranslate[2] += average * 0.01f;
       }
       break;
   }
@@ -199,10 +211,12 @@ void mouseButtonFunc(int button, int state, int x, int y)
   switch (glutGetModifiers())
   {
     case GLUT_ACTIVE_CTRL:
+      cout << "You pressed the GLUT_ACTIVE_CTRL." << endl;
       controlState = TRANSLATE;
     break;
 
     case GLUT_ACTIVE_SHIFT:
+      cout << "You pressed the GLUT_ACTIVE_SHIFT." << endl;
       controlState = SCALE;
     break;
 
@@ -224,7 +238,7 @@ void keyboardFunc(unsigned char key, int x, int y)
     case 27: // ESC key
       exit(0); // exit the program
     break;
-
+    
     case '1':
       cout << "You pressed the 1." << endl;
       mode = 0;
@@ -257,6 +271,18 @@ void keyboardFunc(unsigned char key, int x, int y)
       // Take a screenshot.
       saveScreenshot("screenshot.jpg");
     break;
+
+    case 'r':
+      // Reset the terrain to its default position.
+      terrainRotate[0] = 0.0f;
+      terrainRotate[1] = 0.0f;
+      terrainRotate[2] = 0.0f;
+      terrainTranslate[0] = 0.0f;
+      terrainTranslate[1] = 0.0f;
+      terrainTranslate[2] = 0.0f;
+      terrainScale[0] = 1.0f;
+      terrainScale[1] = 1.0f;
+      terrainScale[2] = 1.0f;
   }
 }
 
@@ -280,8 +306,8 @@ void displayFunc()
   matrix.Rotate(terrainRotate[0], 1.0, 0.0, 0.0);
   matrix.Rotate(terrainRotate[1], 0.0, 1.0, 0.0);
   matrix.Rotate(terrainRotate[2], 0.0, 0.0, 1.0);
-  matrix.Scale(terrainScale[0], terrainScale[0], terrainScale[0]);
-  matrix.Scale(terrainScale[1], terrainScale[1], terrainScale[1]);
+  float magnitude = std::sqrt(terrainScale[0] * terrainScale[0] + terrainScale[1] * terrainScale[1]);
+  matrix.Scale(magnitude, magnitude, terrainScale[2]);
 
   // Read the current modelview and projection matrices from our helper class.
   // The matrices are only read here; nothing is actually communicated to OpenGL yet.
