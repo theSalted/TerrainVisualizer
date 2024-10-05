@@ -44,7 +44,7 @@ typedef enum { DEFAULT, CTRL, SHIFT } CONTROL_STATE;
 CONTROL_STATE controlState = CTRL;
 
 // Transformations of the terrain.
-float terrainRotate[3] = { 0.0f, 0.0f, 0.0f }; 
+float terrainRotate[3] = { 90.0f, 0.0f, 0.0f }; 
 // terrainRotate[0] gives the rotation around x-axis (in degrees)
 // terrainRotate[1] gives the rotation around y-axis (in degrees)
 // terrainRotate[2] gives the rotation around z-axis (in degrees)
@@ -227,6 +227,21 @@ void mouseButtonFunc(int button, int state, int x, int y)
   mousePos[1] = y;
 }
 
+void updateDrawMode() {
+  switch (mode)
+  {
+  case 0:
+    glDrawArrays(GL_POINTS, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
+    break;
+  case 1:
+    glDrawArrays(GL_LINES, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
+    break;
+  default:
+    glDrawArrays(GL_TRIANGLES, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
+    break;
+  }
+}
+
 void keyboardFunc(unsigned char key, int x, int y)
 {
   switch (key)
@@ -239,24 +254,28 @@ void keyboardFunc(unsigned char key, int x, int y)
       cout << "You pressed the 1." << endl;
       mode = 0;
       pipelineProgram.SetUniformVariablei("mode", mode);
+      updateDrawMode();
     break;
 
     case '2':
       cout << "You pressed the 2." << endl;
       mode = 1;
       pipelineProgram.SetUniformVariablei("mode", mode);
+      updateDrawMode();
     break;
 
     case '3':
       cout << "You pressed the 3." << endl;
       mode = 2;
       pipelineProgram.SetUniformVariablei("mode", mode);
+      updateDrawMode();
     break;
 
     case '4':
       cout << "You pressed the 4." << endl;
       mode = 3;
       pipelineProgram.SetUniformVariablei("mode", mode);
+      updateDrawMode();
     break;
 
     case ' ':
@@ -270,7 +289,7 @@ void keyboardFunc(unsigned char key, int x, int y)
 
     case 'r':
       // Reset the terrain to its default position.
-      terrainRotate[0] = 0.0f;
+      terrainRotate[0] = 90.0f;
       terrainRotate[1] = 0.0f;
       terrainRotate[2] = 0.0f;
       terrainTranslate[0] = 0.0f;
@@ -279,19 +298,6 @@ void keyboardFunc(unsigned char key, int x, int y)
       terrainScale[0] = 1.0f;
       terrainScale[1] = 1.0f;
       terrainScale[2] = 1.0f;
-  }
-}
-
-void updateDrawMode() {
-  switch (mode)
-  {
-  case 0:
-    glDrawArrays(GL_POINTS, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
-    break;
-  
-  default:
-    glDrawArrays(GL_POINTS, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
-    break;
   }
 }
 
@@ -422,7 +428,7 @@ void initScene(int argc, char *argv[])
 
       // Set vertex positions (x, y, z)
       positions[idx * 3 + 0] = x;
-      positions[idx * 3 + 1] = y;
+      positions[idx * 3 + 1] = y * 0.1;
       positions[idx * 3 + 2] = z;
 
       // Set vertex colors (r, g, b, a)
