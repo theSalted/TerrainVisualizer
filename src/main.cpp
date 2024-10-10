@@ -17,6 +17,7 @@
 #include <iostream>
 #include <cstring>
 #include <memory>
+#include "main.h"
 
 #if defined(WIN32) || defined(_WIN32)
 #ifdef _DEBUG
@@ -67,6 +68,7 @@ int mode = 0;
 
 // Number of vertices in the single triangle (starter code).
 int numVertices;
+int numLineVertices;
 
 // Helper classes.
 OpenGLMatrix matrix;
@@ -74,6 +76,12 @@ PipelineProgram pipelineProgram;
 VBO vboVertices;
 VBO vboColors;
 VAO vao;
+// Add these at the top with other global variables
+VBO vboLineVertices;
+VBO vboLineColors;
+VAO vaoLines;
+
+
 
 // Write a screenshot to the specified filename.
 void saveScreenshot(const char *filename)
@@ -233,78 +241,58 @@ void mouseButtonFunc(int button, int state, int x, int y)
     mousePos[1] = y;
 }
 
-void updateDrawMode()
-{
-    switch (mode)
-    {
-    case 0:
-        glDrawArrays(GL_POINTS, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
-        break;
-    case 1:
-        glDrawArrays(GL_LINES, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
-        break;
-    default:
-        glDrawArrays(GL_TRIANGLES, 0, numVertices); // Render the VAO, by rendering "numVertices", starting from vertex 0.
-        break;
-    }
-}
-
 void keyboardFunc(unsigned char key, int x, int y)
 {
     switch (key)
     {
-    case 27:     // ESC key
-        exit(0); // exit the program
-        break;
+        case 27: // ESC key
+            exit(0); // exit the program
+            break;
 
-    case '1':
-        cout << "You pressed the 1." << endl;
-        mode = 0;
-        pipelineProgram.SetUniformVariablei("mode", mode);
-        updateDrawMode();
-        break;
+        case '1':
+            cout << "Point mode activated." << endl;
+            mode = 0;
+            pipelineProgram.SetUniformVariablei("mode", mode);
+            break;
 
-    case '2':
-        cout << "You pressed the 2." << endl;
-        mode = 1;
-        pipelineProgram.SetUniformVariablei("mode", mode);
-        updateDrawMode();
-        break;
+        case '2':
+            cout << "Line mode activated." << endl;
+            mode = 1;
+            pipelineProgram.SetUniformVariablei("mode", mode);
+            break;
 
-    case '3':
-        cout << "You pressed the 3." << endl;
-        mode = 2;
-        pipelineProgram.SetUniformVariablei("mode", mode);
-        updateDrawMode();
-        break;
+        case '3':
+            cout << "You pressed the 3." << endl;
+            mode = 2;
+            pipelineProgram.SetUniformVariablei("mode", mode);
+            break;
 
-    case '4':
-        cout << "You pressed the 4." << endl;
-        mode = 3;
-        pipelineProgram.SetUniformVariablei("mode", mode);
-        updateDrawMode();
-        break;
+        case '4':
+            cout << "You pressed the 4." << endl;
+            mode = 3;
+            pipelineProgram.SetUniformVariablei("mode", mode);
+            break;
 
-    case ' ':
-        cout << "You pressed the spacebar." << endl;
-        break;
+        case ' ':
+            cout << "You pressed the spacebar." << endl;
+            break;
 
-    case 'x':
-        // Take a screenshot.
-        saveScreenshot("screenshot.jpg");
-        break;
+        case 'x':
+            // Take a screenshot.
+            saveScreenshot("screenshot.jpg");
+            break;
 
-    case 'r':
-        // Reset the terrain to its default position.
-        terrainRotate[0] = 90.0f;
-        terrainRotate[1] = 0.0f;
-        terrainRotate[2] = 0.0f;
-        terrainTranslate[0] = 0.0f;
-        terrainTranslate[1] = 0.0f;
-        terrainTranslate[2] = 0.0f;
-        terrainScale[0] = 1.0f;
-        terrainScale[1] = 1.0f;
-        terrainScale[2] = 1.0f;
+        case 'r':
+            // Reset the terrain to its default position.
+            terrainRotate[0] = 90.0f;
+            terrainRotate[1] = 0.0f;
+            terrainRotate[2] = 0.0f;
+            terrainTranslate[0] = 0.0f;
+            terrainTranslate[1] = 0.0f;
+            terrainTranslate[2] = 0.0f;
+            terrainScale[0] = 1.0f;
+            terrainScale[1] = 1.0f;
+            terrainScale[2] = 1.0f;
     }
 }
 
@@ -353,8 +341,17 @@ void displayFunc()
 
     // Execute the rendering.
     // Bind the VAO that we want to render. Remember, one object = one VAO.
-    vao.Bind();
-    updateDrawMode();
+    // Execute the rendering based on the current mode
+    if (mode == 0) // Point mode
+    {
+        vao.Bind();
+        glDrawArrays(GL_POINTS, 0, numVertices);
+    }
+    else if (mode == 1) // Line mode
+    {
+        vaoLines.Bind();
+        glDrawArrays(GL_LINES, 0, numLineVertices);
+    }
     // Swap the double-buffers.
     glutSwapBuffers();
 }
@@ -409,8 +406,19 @@ void initScene(int argc, char *argv[])
 
     int width = heightmapImage->getWidth();
     int height = heightmapImage->getHeight();
-    int resolution = width * height;
+    
+    initPointMode(height, width, heightmapImage); // 4 values per color
+    initLineMode(height, width, heightmapImage);
 
+    
+
+    // Check for any OpenGL errors.
+    std::cout << "GL error status is: " << glGetError() << std::endl;
+}
+
+void initPointMode(int height, int width, std::__1::unique_ptr<ImageIO> &heightmapImage)
+{
+    int resolution = width * height;
     numVertices = resolution; // This must be a global variable, so that we know how many vertices to render in glDrawArrays.
 
     // // Vertex positions.
@@ -453,7 +461,7 @@ void initScene(int argc, char *argv[])
     // We make a separate VBO for vertices and colors.
     // This operation must be performed BEFORE we initialize any VAOs.
     vboVertices.Gen(numVertices, 3, positions.get(), GL_STATIC_DRAW); // 3 values per position
-    vboColors.Gen(numVertices, 4, colors.get(), GL_STATIC_DRAW);      // 4 values per color
+    vboColors.Gen(numVertices, 4, colors.get(), GL_STATIC_DRAW);
 
     // Create the VAOs. There is a single VAO in this example.
     // Important: this code must be executed AFTER we created our pipeline program, and AFTER we set up our VBOs.
@@ -469,10 +477,84 @@ void initScene(int argc, char *argv[])
     // Set up the relationship between the "color" shader variable and the VAO.
     // Important: any typo in the shader variable name will lead to malfunction.
     vao.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboColors, "color");
-
-    // Check for any OpenGL errors.
-    std::cout << "GL error status is: " << glGetError() << std::endl;
 }
+
+void initLineMode(int height, int width, std::unique_ptr<ImageIO> &heightmapImage)
+{
+    numLineVertices = 2 * (((width - 1) * height) + (width * (height - 1)));
+    std::unique_ptr<float[]> positions = std::make_unique<float[]>(numLineVertices * 3);
+    std::unique_ptr<float[]> colors = std::make_unique<float[]>(numLineVertices * 4);
+
+    int idx = 0;
+    for (int j = 0; j < height; ++j) {
+        for (int i = 0; i < width; ++i) {
+            float x = static_cast<float>(i) / (width - 1);
+            float z = -static_cast<float>(j) / (height - 1);
+            float y = heightmapImage->getPixel(i, j, 0) / 255.0f * 0.1f; // Scale the height value
+
+            // Color based on height
+            float color = y * 10.0f; // Adjust scaling as needed
+            
+            // Right neighbor
+            if (i < width - 1) {
+                float xRight = static_cast<float>(i + 1) / (width - 1);
+                float yRight = heightmapImage->getPixel(i + 1, j, 0) / 255.0f * 0.1f;
+                float zRight = z;
+
+                // Positions for line segment
+                positions[idx * 3 + 0] = x;
+                positions[idx * 3 + 1] = y;
+                positions[idx * 3 + 2] = z;
+                positions[(idx + 1) * 3 + 0] = xRight;
+                positions[(idx + 1) * 3 + 1] = yRight;
+                positions[(idx + 1) * 3 + 2] = zRight;
+
+                for (int k = 0; k < 2; ++k) {
+                    colors[(idx + k) * 4 + 0] = color;
+                    colors[(idx + k) * 4 + 1] = color;
+                    colors[(idx + k) * 4 + 2] = color;
+                    colors[(idx + k) * 4 + 3] = 1.0f;
+                }
+
+                idx += 2; // Increment idx only when data is added
+            }
+
+            // Bottom neighbor
+            if (j < height - 1) {
+                float xDown = x;
+                float yDown = heightmapImage->getPixel(i, j + 1, 0) / 255.0f * 0.1f;
+                float zDown = -static_cast<float>(j + 1) / (height - 1);
+
+                positions[idx * 3 + 0] = x;
+                positions[idx * 3 + 1] = y;
+                positions[idx * 3 + 2] = z;
+                positions[(idx + 1) * 3 + 0] = xDown;
+                positions[(idx + 1) * 3 + 1] = yDown;
+                positions[(idx + 1) * 3 + 2] = zDown;
+
+                for (int k = 0; k < 2; ++k) {
+                    colors[(idx + k) * 4 + 0] = color;
+                    colors[(idx + k) * 4 + 1] = color;
+                    colors[(idx + k) * 4 + 2] = color;
+                    colors[(idx + k) * 4 + 3] = 1.0f;
+                }
+
+                idx += 2; // Increment idx only when data is added
+            }
+        }
+    }
+
+    // Generate VBOs
+    vboLineVertices.Gen(numLineVertices, 3, positions.get(), GL_STATIC_DRAW);
+    vboLineColors.Gen(numLineVertices, 4, colors.get(), GL_STATIC_DRAW);
+
+    // Generate VAO
+    vaoLines.Gen();
+    vaoLines.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboLineVertices, "position");
+    vaoLines.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboLineColors, "color"); 
+}
+
+
 
 int main(int argc, char *argv[])
 {
