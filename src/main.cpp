@@ -82,7 +82,11 @@ VBO vboLineColors;
 VAO vaoLines;
 VBO vboTriangleVertices;
 VBO vboTriangleColors;
+VBO vboTriangleTexCoords;
 VAO vaoTriangles;
+
+// Declare a texture ID
+GLuint heightmapTexture;
 
 // Write a screenshot to the specified filename.
 void saveScreenshot(const char *filename)
@@ -263,13 +267,13 @@ void keyboardFunc(unsigned char key, int x, int y)
             break;
 
         case '3':
-            cout << "You pressed the 3." << endl;
+            cout << "Triangle mode activated." << endl;
             mode = 2;
             pipelineProgram.SetUniformVariablei("mode", mode);
             break;
 
         case '4':
-            cout << "You pressed the 4." << endl;
+            cout << "Smooth mode activated." << endl;
             mode = 3;
             pipelineProgram.SetUniformVariablei("mode", mode);
             break;
@@ -418,6 +422,19 @@ void initScene(int argc, char *argv[])
 
     int width = heightmapImage->getWidth();
     int height = heightmapImage->getHeight();
+
+    // Generate and bind the texture
+    glGenTextures(1, &heightmapTexture);
+    glBindTexture(GL_TEXTURE_2D, heightmapTexture);
+
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Upload the texture data
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, heightmapImage->getPixels());
     
     initPointMode(height, width, heightmapImage); // 4 values per color
     initLineMode(height, width, heightmapImage);
@@ -571,98 +588,127 @@ void initTriangleMode(int height, int width, std::unique_ptr<ImageIO> &heightmap
     numTriangleVertices = numTriangles * 3;
     std::unique_ptr<float[]> positions = std::make_unique<float[]>(numTriangleVertices * 3);
     std::unique_ptr<float[]> colors = std::make_unique<float[]>(numTriangleVertices * 4);
+    std::unique_ptr<float[]> texCoords = std::make_unique<float[]>(numTriangleVertices * 2);
 
     int idx = 0;
-    for (int j = 0; j < height - 1; ++j) {
-        for (int i = 0; i < width - 1; ++i) {
-            float ij_x = static_cast<float>(i) / (width - 1);
-            float ij_z = -static_cast<float>(j) / (height - 1);
-            float ij_y = heightmapImage->getPixel(i, j, 0) / 255.0f * 0.1f;
-            float ij_color = ij_y * 10.0f;
+    for (int j = 0; j < height - 1; ++j)
+    {
+        for (int i = 0; i < width - 1; ++i)
+        {
+            // Calculate normalized positions and texture coordinates
+            float s0 = static_cast<float>(i) / (width - 1);
+            float t0 = static_cast<float>(j) / (height - 1);
+            float s1 = static_cast<float>(i + 1) / (width - 1);
+            float t1 = static_cast<float>(j + 1) / (height - 1);
 
-            float i1j_x = static_cast<float>(i + 1) / (width - 1);
-            float i1j_z = ij_z;
-            float i1j_y = heightmapImage->getPixel(i + 1, j, 0) / 255.0f * 0.1f;
-            float i1j_color = i1j_y * 10.0f;
+            // Positions for four corners
+            float x0 = s0;
+            float z0 = -t0;
+            float y0 = heightmapImage->getPixel(i, j, 0) / 255.0f * 0.1f; // Scale height
+            float color0 = y0 * 10.0f;
 
-            float ij1_x = ij_x;
-            float ij1_z = -static_cast<float>(j + 1) / (height - 1);
-            float ij1_y = heightmapImage->getPixel(i, j + 1, 0) / 255.0f * 0.1f;
-            float ij1_color = ij1_y * 10.0f;
+            float x1 = s1;
+            float z1 = -t0;
+            float y1 = heightmapImage->getPixel(i + 1, j, 0) / 255.0f * 0.1f;
+            float color1 = y1 * 10.0f;
 
-            float i1j1_x = i1j_x;
-            float i1j1_z = ij1_z;
-            float i1j1_y = heightmapImage->getPixel(i + 1, j + 1, 0) / 255.0f * 0.1f;
-            float i1j1_color = i1j1_y * 10.0f;
+            float x2 = s0;
+            float z2 = -t1;
+            float y2 = heightmapImage->getPixel(i, j + 1, 0) / 255.0f * 0.1f;
+            float color2 = y2 * 10.0f;
 
-            // Triangle 1
-            positions[idx * 3 + 0] = ij_x;
-            positions[idx * 3 + 1] = ij_y;
-            positions[idx * 3 + 2] = ij_z;
-            colors[idx * 4 + 0] = ij_color;
-            colors[idx * 4 + 1] = ij_color;
-            colors[idx * 4 + 2] = ij_color;
+            float x3 = s1;
+            float z3 = -t1;
+            float y3 = heightmapImage->getPixel(i + 1, j + 1, 0) / 255.0f * 0.1f;
+            float color3 = y3 * 10.0f;
+
+            // Triangle 1 (Top-left triangle)
+            // Vertex 0
+            positions[idx * 3 + 0] = x0;
+            positions[idx * 3 + 1] = y0;
+            positions[idx * 3 + 2] = z0;
+            colors[idx * 4 + 0] = color0;
+            colors[idx * 4 + 1] = color0;
+            colors[idx * 4 + 2] = color0;
             colors[idx * 4 + 3] = 1.0f;
+            texCoords[idx * 2 + 0] = s0;
+            texCoords[idx * 2 + 1] = 1.0f - t0;
             idx++;
 
-            positions[idx * 3 + 0] = i1j_x;
-            positions[idx * 3 + 1] = i1j_y;
-            positions[idx * 3 + 2] = i1j_z;
-            colors[idx * 4 + 0] = i1j_color;
-            colors[idx * 4 + 1] = i1j_color;
-            colors[idx * 4 + 2] = i1j_color;
+            // Vertex 1
+            positions[idx * 3 + 0] = x1;
+            positions[idx * 3 + 1] = y1;
+            positions[idx * 3 + 2] = z1;
+            colors[idx * 4 + 0] = color1;
+            colors[idx * 4 + 1] = color1;
+            colors[idx * 4 + 2] = color1;
             colors[idx * 4 + 3] = 1.0f;
+            texCoords[idx * 2 + 0] = s1;
+            texCoords[idx * 2 + 1] = 1.0f - t0;
             idx++;
 
-            positions[idx * 3 + 0] = ij1_x;
-            positions[idx * 3 + 1] = ij1_y;
-            positions[idx * 3 + 2] = ij1_z;
-            colors[idx * 4 + 0] = ij1_color;
-            colors[idx * 4 + 1] = ij1_color;
-            colors[idx * 4 + 2] = ij1_color;
+            // Vertex 2
+            positions[idx * 3 + 0] = x2;
+            positions[idx * 3 + 1] = y2;
+            positions[idx * 3 + 2] = z2;
+            colors[idx * 4 + 0] = color2;
+            colors[idx * 4 + 1] = color2;
+            colors[idx * 4 + 2] = color2;
             colors[idx * 4 + 3] = 1.0f;
+            texCoords[idx * 2 + 0] = s0;
+            texCoords[idx * 2 + 1] = 1.0f - t1;
             idx++;
 
-            // Triangle 2
-            positions[idx * 3 + 0] = ij1_x;
-            positions[idx * 3 + 1] = ij1_y;
-            positions[idx * 3 + 2] = ij1_z;
-            colors[idx * 4 + 0] = ij1_color;
-            colors[idx * 4 + 1] = ij1_color;
-            colors[idx * 4 + 2] = ij1_color;
+            // Triangle 2 (Bottom-right triangle)
+            // Vertex 3
+            positions[idx * 3 + 0] = x2;
+            positions[idx * 3 + 1] = y2;
+            positions[idx * 3 + 2] = z2;
+            colors[idx * 4 + 0] = color2;
+            colors[idx * 4 + 1] = color2;
+            colors[idx * 4 + 2] = color2;
             colors[idx * 4 + 3] = 1.0f;
+            texCoords[idx * 2 + 0] = s0;
+            texCoords[idx * 2 + 1] = 1.0f - t1;
             idx++;
 
-            positions[idx * 3 + 0] = i1j_x;
-            positions[idx * 3 + 1] = i1j_y;
-            positions[idx * 3 + 2] = i1j_z;
-            colors[idx * 4 + 0] = i1j_color;
-            colors[idx * 4 + 1] = i1j_color;
-            colors[idx * 4 + 2] = i1j_color;
+            // Vertex 4
+            positions[idx * 3 + 0] = x1;
+            positions[idx * 3 + 1] = y1;
+            positions[idx * 3 + 2] = z1;
+            colors[idx * 4 + 0] = color1;
+            colors[idx * 4 + 1] = color1;
+            colors[idx * 4 + 2] = color1;
             colors[idx * 4 + 3] = 1.0f;
+            texCoords[idx * 2 + 0] = s1;
+            texCoords[idx * 2 + 1] = 1.0f - t0;
             idx++;
 
-            positions[idx * 3 + 0] = i1j1_x;
-            positions[idx * 3 + 1] = i1j1_y;
-            positions[idx * 3 + 2] = i1j1_z;
-            colors[idx * 4 + 0] = i1j1_color;
-            colors[idx * 4 + 1] = i1j1_color;
-            colors[idx * 4 + 2] = i1j1_color;
+            // Vertex 5
+            positions[idx * 3 + 0] = x3;
+            positions[idx * 3 + 1] = y3;
+            positions[idx * 3 + 2] = z3;
+            colors[idx * 4 + 0] = color3;
+            colors[idx * 4 + 1] = color3;
+            colors[idx * 4 + 2] = color3;
             colors[idx * 4 + 3] = 1.0f;
+            texCoords[idx * 2 + 0] = s1;
+            texCoords[idx * 2 + 1] = 1.0f - t1;
             idx++;
         }
     }
 
-    // Generate VBOs
+    // Generate VBOs for positions, colors, and texture coordinates
     vboTriangleVertices.Gen(numTriangleVertices, 3, positions.get(), GL_STATIC_DRAW);
     vboTriangleColors.Gen(numTriangleVertices, 4, colors.get(), GL_STATIC_DRAW);
+    vboTriangleTexCoords.Gen(numTriangleVertices, 2, texCoords.get(), GL_STATIC_DRAW);
 
-    // Generate VAO
+    // Generate VAO and connect VBOs to shader variables
     vaoTriangles.Gen();
     vaoTriangles.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboTriangleVertices, "position");
     vaoTriangles.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboTriangleColors, "color");
+    vaoTriangles.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboTriangleTexCoords, "texCoord");
 }
-
 
 int main(int argc, char *argv[])
 {
