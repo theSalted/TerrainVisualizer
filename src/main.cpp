@@ -69,6 +69,7 @@ int mode = 0;
 // Number of vertices in the single triangle (starter code).
 int numVertices;
 int numLineVertices;
+int numTriangleVertices;
 
 // Helper classes.
 OpenGLMatrix matrix;
@@ -76,12 +77,12 @@ PipelineProgram pipelineProgram;
 VBO vboVertices;
 VBO vboColors;
 VAO vao;
-// Add these at the top with other global variables
 VBO vboLineVertices;
 VBO vboLineColors;
 VAO vaoLines;
-
-
+VBO vboTriangleVertices;
+VBO vboTriangleColors;
+VAO vaoTriangles;
 
 // Write a screenshot to the specified filename.
 void saveScreenshot(const char *filename)
@@ -352,6 +353,17 @@ void displayFunc()
         vaoLines.Bind();
         glDrawArrays(GL_LINES, 0, numLineVertices);
     }
+    else if (mode == 2) // Triangle mode
+    {
+        vaoTriangles.Bind();
+        glDrawArrays(GL_TRIANGLES, 0, numTriangleVertices);
+    }
+    else if (mode == 3) // Smooth mode
+    {
+        vaoTriangles.Bind();
+        glDrawArrays(GL_TRIANGLES, 0, numTriangleVertices);
+    }
+
     // Swap the double-buffers.
     glutSwapBuffers();
 }
@@ -409,8 +421,7 @@ void initScene(int argc, char *argv[])
     
     initPointMode(height, width, heightmapImage); // 4 values per color
     initLineMode(height, width, heightmapImage);
-
-    
+    initTriangleMode(height, width, heightmapImage);
 
     // Check for any OpenGL errors.
     std::cout << "GL error status is: " << glGetError() << std::endl;
@@ -554,6 +565,103 @@ void initLineMode(int height, int width, std::unique_ptr<ImageIO> &heightmapImag
     vaoLines.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboLineColors, "color"); 
 }
 
+void initTriangleMode(int height, int width, std::unique_ptr<ImageIO> &heightmapImage)
+{
+    int numTriangles = (width - 1) * (height - 1) * 2;
+    numTriangleVertices = numTriangles * 3;
+    std::unique_ptr<float[]> positions = std::make_unique<float[]>(numTriangleVertices * 3);
+    std::unique_ptr<float[]> colors = std::make_unique<float[]>(numTriangleVertices * 4);
+
+    int idx = 0;
+    for (int j = 0; j < height - 1; ++j) {
+        for (int i = 0; i < width - 1; ++i) {
+            float ij_x = static_cast<float>(i) / (width - 1);
+            float ij_z = -static_cast<float>(j) / (height - 1);
+            float ij_y = heightmapImage->getPixel(i, j, 0) / 255.0f * 0.1f;
+            float ij_color = ij_y * 10.0f;
+
+            float i1j_x = static_cast<float>(i + 1) / (width - 1);
+            float i1j_z = ij_z;
+            float i1j_y = heightmapImage->getPixel(i + 1, j, 0) / 255.0f * 0.1f;
+            float i1j_color = i1j_y * 10.0f;
+
+            float ij1_x = ij_x;
+            float ij1_z = -static_cast<float>(j + 1) / (height - 1);
+            float ij1_y = heightmapImage->getPixel(i, j + 1, 0) / 255.0f * 0.1f;
+            float ij1_color = ij1_y * 10.0f;
+
+            float i1j1_x = i1j_x;
+            float i1j1_z = ij1_z;
+            float i1j1_y = heightmapImage->getPixel(i + 1, j + 1, 0) / 255.0f * 0.1f;
+            float i1j1_color = i1j1_y * 10.0f;
+
+            // Triangle 1
+            positions[idx * 3 + 0] = ij_x;
+            positions[idx * 3 + 1] = ij_y;
+            positions[idx * 3 + 2] = ij_z;
+            colors[idx * 4 + 0] = ij_color;
+            colors[idx * 4 + 1] = ij_color;
+            colors[idx * 4 + 2] = ij_color;
+            colors[idx * 4 + 3] = 1.0f;
+            idx++;
+
+            positions[idx * 3 + 0] = i1j_x;
+            positions[idx * 3 + 1] = i1j_y;
+            positions[idx * 3 + 2] = i1j_z;
+            colors[idx * 4 + 0] = i1j_color;
+            colors[idx * 4 + 1] = i1j_color;
+            colors[idx * 4 + 2] = i1j_color;
+            colors[idx * 4 + 3] = 1.0f;
+            idx++;
+
+            positions[idx * 3 + 0] = ij1_x;
+            positions[idx * 3 + 1] = ij1_y;
+            positions[idx * 3 + 2] = ij1_z;
+            colors[idx * 4 + 0] = ij1_color;
+            colors[idx * 4 + 1] = ij1_color;
+            colors[idx * 4 + 2] = ij1_color;
+            colors[idx * 4 + 3] = 1.0f;
+            idx++;
+
+            // Triangle 2
+            positions[idx * 3 + 0] = ij1_x;
+            positions[idx * 3 + 1] = ij1_y;
+            positions[idx * 3 + 2] = ij1_z;
+            colors[idx * 4 + 0] = ij1_color;
+            colors[idx * 4 + 1] = ij1_color;
+            colors[idx * 4 + 2] = ij1_color;
+            colors[idx * 4 + 3] = 1.0f;
+            idx++;
+
+            positions[idx * 3 + 0] = i1j_x;
+            positions[idx * 3 + 1] = i1j_y;
+            positions[idx * 3 + 2] = i1j_z;
+            colors[idx * 4 + 0] = i1j_color;
+            colors[idx * 4 + 1] = i1j_color;
+            colors[idx * 4 + 2] = i1j_color;
+            colors[idx * 4 + 3] = 1.0f;
+            idx++;
+
+            positions[idx * 3 + 0] = i1j1_x;
+            positions[idx * 3 + 1] = i1j1_y;
+            positions[idx * 3 + 2] = i1j1_z;
+            colors[idx * 4 + 0] = i1j1_color;
+            colors[idx * 4 + 1] = i1j1_color;
+            colors[idx * 4 + 2] = i1j1_color;
+            colors[idx * 4 + 3] = 1.0f;
+            idx++;
+        }
+    }
+
+    // Generate VBOs
+    vboTriangleVertices.Gen(numTriangleVertices, 3, positions.get(), GL_STATIC_DRAW);
+    vboTriangleColors.Gen(numTriangleVertices, 4, colors.get(), GL_STATIC_DRAW);
+
+    // Generate VAO
+    vaoTriangles.Gen();
+    vaoTriangles.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboTriangleVertices, "position");
+    vaoTriangles.ConnectPipelineProgramAndVBOAndShaderVariable(&pipelineProgram, &vboTriangleColors, "color");
+}
 
 
 int main(int argc, char *argv[])

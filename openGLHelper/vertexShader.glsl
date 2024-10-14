@@ -13,15 +13,6 @@ void main()
   // compute the transformed and projected vertex position (into gl_Position) 
   // compute the vertex color (into col)
   col = color;
-  if (mode == 0) {
-    col = color;
-  } else if (mode == 1) {
-    col = color;
-  } else if (mode == 2) {
-    col = color;
-  } else if (mode == 3) {
-    col = color;
-  }
   
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0f);
   // col = color;
